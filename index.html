@@ -1,0 +1,101 @@
+﻿<!doctype html>
+<!-- Authored by Brian Koo -->
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html">
+  <title>Github Repo Search Webapp</title>
+  <meta name="author" content="Brian Koo">
+  <link rel="stylesheet" type="text/css" media="all" href="css/styles.css">
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+</head>
+
+<body>
+  <div id="w">
+    <h1>GitHub Repo Search Engine</h1>
+    <p>Enter a Repository name</p>
+    <input type="text" name="reponame" id="reponame" placeholder="Github Repo Name...">
+    <button href="#" id = "search" type="button" > Search</button>
+    <div id="ghapidata" class="clearfix"></div>
+  </div>
+ <script type="text/javascript"> //script that interacts with GitHub API
+$(function(){
+  $("#reponame").keyup(function(event){
+    if(event.keyCode == 13){ //If Enter key is pressed the search button is pressed
+        $("#search").click();
+    }
+  });
+  $('#search').on('click', function(e){ 
+    e.preventDefault();
+    $('#ghapidata').html('<div id="loader"><img src="css/loader.gif" alt="loading..."></div>'); //loading gif when search button is pressed
+    var search_query = $('#reponame').val(); //gets the query data from the search bar
+    if(search_query == "") { //If nothing is entered
+		$('#ghapidata').html('<p>Please Enter Keywords!</p></div>');
+    }
+    var requri  = 'https://api.github.com/search/repositories?q='+ search_query; //Gets data from GitHub API
+    var repositories;
+    var outhtml = '<div class="repolist clearfix">';
+    $.getJSON(requri, function(json) { //Receives JSON data.
+		console.log(json);
+		repositories = json; 
+		outputPageContent();
+    });
+
+    function outputPageContent() { //function that outputs data to html
+	    if(repositories.total_count == 0) { outhtml = outhtml + '<p>No repos!</p></div>'; }  //if no result found.
+	    else {
+			//adds total results 
+			outhtml = outhtml + '<p><strong>Repos List: ' + repositories.total_count + ' repositories found.</strong></p> <ul>';
+			$.each(repositories.items, function(index) { //loop through each item
+				var url = repositories.items[index].html_url;
+				var name = repositories.items[index].full_name;
+				var language = repositories.items[index].language;
+				if( language == null ) { language = ""; }
+				var description = repositories.items[index].description;
+				var updated = repositories.items[index].pushed_at;
+				
+				outhtml = outhtml + '<li><h2><a href="'+ url +'" target="_blank">'+ name ;
+				outhtml = outhtml + '<div class = "repo-stats">' + language + '</div></a></h2> <div>' + description +' </div> ';
+				outhtml =  get_dates(updated,outhtml);
+				outhtml = outhtml + '</li>';
+			}); 
+		
+			outhtml = outhtml + '</ul></div>'; 
+			}
+			$('#ghapidata').html(outhtml);
+    } // end outputPageContent()
+	function get_dates(updated_date,outhtml) { //reads data and output the readable format
+		var year = updated_date.match('^([0-9]+)-')[1];
+		var month = get_month(parseInt(updated_date.match( '-(.+)-' )[1]));
+		var day = parseInt(updated_date.match( '-([0-9]+)T' )[1]);
+		var d = new Date();
+		var current_year = d.getFullYear();
+		if (year == current_year) {
+			year = "";
+		} else {
+			year = ", " + String(year);
+		}
+		outhtml = outhtml + '<p class = "repo-updated"> Updated on ' + month + ' ' + day + year + '</p>';
+		return outhtml;
+	}
+	function get_month(i) { //gets month
+		var month = new Array();
+		month[0] = "Jan";
+		month[1] = "Feb";
+		month[2] = "Mar";
+		month[3] = "Apr";
+		month[4] = "May";
+		month[5] = "June";
+		month[6] = "July";
+		month[7] = "Aug";
+		month[8] = "Sep";
+		month[9] = "Oct";
+		month[10] = "Nov";
+		month[11] = "Dec";
+		return month[i-1];
+	}
+  }); // end click event handler
+});
+</script>
+</body>
+</html>
